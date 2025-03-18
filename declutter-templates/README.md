@@ -5,11 +5,9 @@ How to use declutter cards:
 
 3. Use any decluttering tempalte:
 
-'''
-
+```
 type: custom:decluttering-card
 template: device_details
 variables:
   - device: A7
-
-'''
+```
