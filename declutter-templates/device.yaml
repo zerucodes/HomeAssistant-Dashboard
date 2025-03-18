@@ -1,0 +1,38 @@
+
+device:
+  default:
+    - device: XM4  
+    - tracker: device_tracker.default_location
+    - battery: sensor.wh_1000xm4_battery
+    - usage: sensor.wh_1000xm4_battery_used
+    - hours: 240
+  card:
+    type: vertical-stack
+    cards:
+      - type: map
+        entities:
+          - entity: '[[tracker]]'
+        theme_mode: auto
+        hours_to_show: 48
+        aspect_ratio: '2:1'
+      - type: custom:mini-graph-card
+        name: '[[device]] Battery Stats'
+        entities:
+          - entity: '[[battery]]'
+        hours_to_show: 240
+        points_per_hour: 1
+        color_thresholds:
+          - color: red
+            value: 15
+          - color: orange
+          - color: yellow
+          - color: green
+            value: 85
+      - type: statistics-graph
+        chart_type: bar
+        entities:
+          - entity: '[[usage]]'
+        period: day
+        days_to_show: 5
+        stat_types:
+          - change

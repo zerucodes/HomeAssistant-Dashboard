@@ -1,0 +1,224 @@
+mobile_device_android:
+  default:
+    - name: s21
+  card:
+    type: vertical-stack
+    cards:
+      - type: custom:button-card
+        show_icon: false
+        name: ' '
+        hold_action:
+          action: more-info
+        double_tap_action:
+          action: toggle
+        styles:
+          card:
+            - border-style: none
+          custom_fields:
+            picture_field:
+              - justify-self: center
+              - height: auto
+              - padding-top: 25px
+            status_field:
+              - position: absolute
+              - top: 15px
+              - right: 15px
+              - display: flex
+              - align-items: center
+              - gap: 10px
+          grid:
+            - grid-template-areas: >-
+                "picture_field status_field" "n n" "state_field state_field"
+                "button_field button_field" "bkg_graph bkg_graph"
+            - grid-template-columns: 1fr min-content
+            - grid-template-rows: 1fr min-content min-content min-content
+        custom_fields:
+          picture_field: |
+            [[[
+                var imagePath = states['device_tracker.[[name]]'].attributes['entity_picture']
+                return `<img
+                src="${imagePath}"
+                style="width: 150px;"> 
+                </img> `;
+                      ]]]
+          status_field: |
+            [[[
+
+            function batteryToColor(battery, state) {
+                    if (state == 'charging'){
+                      return 'white';
+                    }else if (battery <= 20) {
+                      return 'red';
+                    } else if (battery > 20 && battery <= 30) {
+                      return 'orange';
+                    } else if (battery > 30 && battery <= 50) {
+                      return 'yellow';
+                    } else if (battery > 50 && battery < 98) {
+                      return 'lightgreen';
+                    } else if (battery >= 98) {
+                      return '#3AB0FF';
+                    }
+                  }
+
+              const createIcon = (icon, color) => icon ? 
+                `<ha-icon icon="${icon}" style="width: 25px; height: 25px; color: ${color};"></ha-icon>` : '';
+
+              
+              const tracker = 'device_tracker.[[name]]';
+              const battery =  'sensor.[[name]]_battery_level';
+              const battery_state = 'sensor.[[name]]_battery_state';
+              const ringer = 'sensor.[[name]]_ringer_mode';
+              const network = 'sensor.[[name]]_network_type';
+              const bt = 'sensor.[[name]]_bluetooth_connection';
+              
+
+              let loc_color = 'red';
+              let loc_icon = 'mdi:map-marker-question';
+              let battery_icon = states[battery].attributes.icon;
+              let battery_color = batteryToColor(states[battery].state,  states[battery_state].state);
+              
+              let ringer_icon = states[ringer].attributes.icon
+              let ringer_color = '';
+              
+              let net_icon = states[network].attributes.icon;
+              let net_color = "purple";
+
+
+              let pairedDevices = states[bt].attributes.connected_paired_devices;
+              
+              try{
+                const loc_name = states['device_tracker.[[name]]'].state;
+                const loc = loc_name.replace(" ","_").toLowerCase();
+                loc_color = loc === "home" ? 'lightgreen' : 'red';
+                loc_icon = states['zone.' + loc].attributes.icon;
+              }catch (error)
+              {
+                
+              }
+              
+              const deviceIconDictionary = {
+                  "XM4": "mdi:headphones",
+                  "Watch": "mdi:watch",
+                  "MX Master 3": "mdi:mouse",
+                  "Buds2 Pro": "phu:apple-airpods-pro",
+                  "TOYOTA Corolla": "mdi:car",
+                  "SONOS": "mdi:speaker",
+                  "ZERU-PC": "mdi:desktop-tower",
+                  "Galaxy Ring": "mdi:circle-outline",
+                  "OBD": "mdi:car-battery"
+              };
+
+              let unmatchedCount = 0;
+              let deviceIcons = ``;
+              pairedDevices.forEach(device => {
+                  let matched = false;
+                  for (const [name, icon] of Object.entries(deviceIconDictionary)) {
+                      if (device.toLowerCase().includes(name.toLowerCase())) {
+                            deviceIcons += `${createIcon(icon, 'cyan')}`;
+                          matched = true;
+                          break;
+                      }
+                  }
+                  if (!matched) unmatchedCount++;
+              });
+
+              let miscIcon = 'numeric-7-circle-outline';
+              if (unmatchedCount > 0){
+                deviceIcons += `${createIcon('mdi:numeric-' + unmatchedCount + '-circle-outline','cyan')}`;
+              }
+              const status = `
+              
+              ${createIcon(loc_icon, loc_color)}
+              
+              ${createIcon(net_icon, net_color)}
+              ${createIcon(battery_icon, battery_color)}
+              ${deviceIcons}
+                      `;
+              return status;
+            ]]]
+      - type: horizontal-stack
+        cards:
+          - show_name: false
+            show_icon: true
+            type: button
+            entity: input_button.ping_[[name]]
+            tap_action:
+              action: toggle
+          - show_name: false
+            show_icon: true
+            type: button
+            entity: sensor.[[name]]_ringer_mode
+            tap_action:
+              action: call-service
+              service: automation.trigger
+              service_data:
+                entity_id: automation.[[name]]_toggle_ringer
+          - show_name: false
+            show_icon: true
+            type: button
+            entity: input_text.copy_text
+            icon: mdi:clipboard-text-outline
+            tap_action:
+              action: call-service
+              service: notify.mobile_app_[[name]]
+              data:
+                message: clipboard.get
+            double_tap_action:
+              action: call-service
+              service: notify.mobile_app_[[name]]
+              data:
+                title: clipboard.data
+                message: '{{ states.input_text.copy_text.state }}'
+      - type: map
+        entities:
+          - entity: 'device_tracker.[[name]]'
+        theme_mode: auto
+        hours_to_show: 48
+        aspect_ratio: '2:1'
+      - type: custom:mini-graph-card
+        name: 1 Week Battery
+        entities:
+          - entity: 'sensor.[[name]]_battery_level'
+        hours_to_show: 240
+        points_per_hour: 1
+        color_thresholds:
+          - color: red
+            value: 15
+          - color: orange
+          - color: yellow
+          - color: green
+            value: 85
+      - type: statistics-graph
+        chart_type: bar
+        entities:
+          - entity: 'sensor.[[name]]_battery_used'
+        period: day
+        days_to_show: 5
+        stat_types:
+          - change
+      - type: custom:bar-card
+        entities:
+          - entity: sensor.[[name]]_volume_level_call
+            max: 5
+          - entity: sensor.[[name]]_volume_level_alarm
+          - entity: sensor.[[name]]_volume_level_music
+          - entity: sensor.[[name]]_volume_level_ringer
+          - entity: sensor.[[name]]_volume_level_system
+        max: 15
+        positions:
+          name: 'off'
+        height: 100px
+        width: 50%
+        direction: up
+        stack: horizontal
+      - type: entities
+        entities:
+          - entity: sensor.[[name]]_wifi_ip_address
+          - entity: sensor.[[name]]_public_ip_address
+        state_color: false
+        show_header_toggle: true
+      - type: custom:decluttering-card
+        template: device_details
+        variables:
+          - device: '[[name]]'
+

@@ -1,0 +1,200 @@
+area:
+  default:
+    - entity: light.bedroom_lamps
+    - name: Area Name
+    - media_player: media_player.apollo_2
+    - temperature: sensor.esp_bedroom_temperature
+    - humidity: sensor.esp_bedroom_humidity
+    - sensor: binary_sensor.esp_3_window
+    - path: bedroom
+  card:
+    type: custom:bubble-card
+    card_type: button
+    button_type: state
+    entity: '[[entity]]'
+    name: '[[name]]'
+    scrolling_effect: false
+    show_state: false
+    show_attribute: true
+    button_action:
+      tap_action:
+        action: navigate
+        navigation_path: '#[[path]]'
+    double_tap_action:
+      action: toggle
+    sub_button:
+      - entity: '[[sensor]]'
+        show_background: false
+        tap_action:
+          action: more-info
+        hold_action:
+          action: more-info
+        visibility:
+          - condition: state
+            entity: '[[sensor]]'
+            state_not: 'off'
+      - entity: '[[media_player]]'
+        show_state: false
+        icon: mdi:play-pause
+        double_tap_action:
+          action: call-service
+          target:
+            entity_id: entity
+          data:
+            radio_mode: false
+            enqueue: replace
+            media_id: Modern Hip hop
+          service: music_assistant.play_media
+        tap_action:
+          action: call-service
+          target:
+            entity_id: entity
+          data: {}
+          service: media_player.media_play_pause
+        hold_action:
+          action: more-info
+    styles: |-
+      .bubble-sub-button-0 > ha-icon {
+        color: ${hass.states['[[sensor]]'].state == 'off' ? 'lightgreen' : 'red'} !important;
+      }
+      ${subButtonIcon[1].setAttribute("icon",
+      hass.states['[[media_player]]'].state === 'playing' ? 'mdi:pause' :
+      'mdi:play')}
+      /* Below code is for badges */
+      /* From patreon.com/Clooos */
+
+      .bubble-icon-container::after {
+        border-radius: 100%;
+      }
+
+      .bubble-icon-container {
+        overflow: visible !important;
+      }
+
+      .bubble-entity-picture {
+        border-radius: var(--bubble-icon-border-radius, var(--bubble-border-radius, 50%));
+      }
+
+      .badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        z-index: 1;
+        background: var(--accent-color);
+        color: var(--primary-text-color);
+        font-size: 10px;
+        height: 15px;
+        width: 20px;
+        border-radius: 50%;
+        --mdc-icon-size: 12px;
+        box-sizing: border-box;
+      }
+
+      .badge.text {
+        border-radius: 10px;
+        padding: 0 4px;
+        width: auto;
+        min-width: 20px;
+      }
+
+      .badge.position-1 {
+        top: -4px;
+        right: -4px;
+      }
+
+      .badge.position-2 {
+        bottom: -4px;
+        right: -4px;
+      }
+
+      .badge.position-3 {
+        bottom: -4px;
+        left: -4px;
+      }
+
+      .badge.position-4 {
+        top: -4px;
+        left: -4px;
+      }
+
+      ${(() => {
+        // Up to 4 badges at the same time in each configs
+        
+        const containersConfig = [
+        
+          {
+            // Example for the main icon
+            containerSelector: '.bubble-icon-container',
+            badgesConfig: [
+            
+              // Show home icon when Quentin is home
+              {
+                entity: '[[temperature]]',
+                text: (state) => `${state}°F`,
+                condition: (state) => state < 100,
+              },
+              
+              // Show battery percentage when below 10%
+              {
+                entity: '[[humidity]]',
+                text: (state) => `${state}%`,
+                condition: (state) => state < 100,
+              },
+
+              // Add more badges if needed...
+            ],
+          },
+          
+          {
+            // Example for sub-button(s) (can be empty or removed if not used)
+            containerSelector: '.bubble-sub-button-1',
+            badgesConfig: [
+              // Add badges for this container if necessary
+            ],
+          },
+
+          // Add more configs if needed...
+        ];
+
+        card.badges ||= {};
+        containersConfig.forEach(({ containerSelector, badgesConfig }) => {
+          const container = card.querySelector(containerSelector);
+          if (!container) return;
+          card.badges[containerSelector] ||= [];
+          badgesConfig.forEach((badgeConfig) => {
+            const state = hass.states[badgeConfig.entity]?.state;
+            const existingBadge = card.badges[containerSelector].find(b => 
+              b.entity === badgeConfig.entity && b.condition.toString() === badgeConfig.condition.toString()
+            );
+            if (badgeConfig.condition(state)) {
+              if (existingBadge) {
+                if (badgeConfig.text) {
+                  existingBadge.element.textContent = typeof badgeConfig.text === 'function' ? badgeConfig.text(state) : badgeConfig.text;
+                }
+              } else {
+                const el = document.createElement("div");
+                el.className = `badge position-${card.badges[containerSelector].length + 1} ${badgeConfig.text ? 'text' : ''}`;
+                if (badgeConfig.color) el.style.backgroundColor = badgeConfig.color;
+                if (badgeConfig.text) {
+                  el.textContent = typeof badgeConfig.text === 'function' ? badgeConfig.text(state) : badgeConfig.text;
+                } else if (badgeConfig.icon) {
+                  const icon = document.createElement("ha-icon");
+                  icon.icon = badgeConfig.icon;
+                  el.appendChild(icon);
+                }
+                container.appendChild(el);
+                card.badges[containerSelector].push({ 
+                  entity: badgeConfig.entity, 
+                  condition: badgeConfig.condition, 
+                  element: el 
+                });
+              }
+            } else if (existingBadge) {
+              container.removeChild(existingBadge.element);
+              card.badges[containerSelector] = card.badges[containerSelector].filter(b => b !== existingBadge);
+            }
+          });
+        });
+      })()}
+

@@ -1,0 +1,22 @@
+quick_play:
+  default:
+    - image_url: https://i.scdn.co/image/ab6761610000e5eb10781f7b76a5eb0d397e02c9
+    - title: JID
+    - type: Artist
+    - media_player: media_player.apollo_2
+  card:
+    type: picture-entity
+    show_state: false
+    show_name: false
+    camera_view: auto
+    image: '[[image_url]]'
+    entity: '[[media_player]]'
+    double_tap_action:
+      action: call-service
+      target:
+        entity_id: '[[media_player]]'
+      data:
+        media_id: '[[title]]'
+        media_type: '[[type]]'
+        radio_mode: true
+      service: music_assistant.play_media

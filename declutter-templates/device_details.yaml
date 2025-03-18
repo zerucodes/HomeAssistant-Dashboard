@@ -1,0 +1,29 @@
+device_details:
+  default:
+    - device: A7
+  card:
+    type: vertical-stack
+    cards:
+      - type: custom:bubble-card
+        card_type: separator
+        name: Details
+        sub_button:
+          - entity: input_boolean.dashboard_show_details
+            show_name: false
+            tap_action:
+              action: toggle
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: input_boolean.dashboard_show_details
+            state: 'on'
+        card:
+          type: custom:auto-entities
+          card:
+            type: entities
+            state_color: true
+          filter:
+            include:
+              - device: '[[device]]'
+          sort:
+            method: entity_id

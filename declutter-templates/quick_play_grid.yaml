@@ -1,0 +1,78 @@
+quick_play_grid:
+  default:
+    - media_player: media_player.apollo_2
+  card:
+    square: true
+    type: grid
+    columns: 3
+    cards:
+      - type: custom:decluttering-card
+        template: quick_play
+        variables:
+          - title: Baby Keem
+          - type: Artist
+          - image_url: >-
+              https://upload.wikimedia.org/wikipedia/en/9/90/TheMelodicBlueCover.jpeg
+          - media_player: '[[media_player]]'
+      - type: custom:decluttering-card
+        template: quick_play
+        variables:
+          - title: JID
+          - type: Artist
+          - image_url: https://i.scdn.co/image/ab6761610000e5eb10781f7b76a5eb0d397e02c9
+          - media_player: '[[media_player]]'
+      - type: custom:decluttering-card
+        template: quick_play
+        variables:
+          - title: Kendrick Lamar
+          - type: Artist
+          - image_url: >-
+              https://e.snmc.io/i/600/s/e1dbcf54455ba5558ae77c8be1dfc7b6/12744501/kendrick-lamar-gnx-cover-art.jpg
+          - media_player: '[[media_player]]'
+      - type: custom:decluttering-card
+        template: quick_play
+        variables:
+          - title: Glass Animals
+          - type: Artist
+          - image_url: >-
+              https://ctmentertainment.be/wp-content/uploads/2023/11/Glass-Animals.jpeg
+          - media_player: '[[media_player]]'
+      - type: custom:decluttering-card
+        template: quick_play
+        variables:
+          - title: Alt J
+          - type: Artist
+          - image_url: >-
+              https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRfhsO4WyJQuN2stiHLrUZq634tHgegKqwpdA&s
+          - media_player: '[[media_player]]'
+      - type: custom:decluttering-card
+        template: quick_play
+        variables:
+          - title: Pop Smoke
+          - type: Artist
+          - image_url: >-
+              https://yt3.googleusercontent.com/ytc/AIdro_lKJKVlE-XcAgWMWbOmYWbbUIcNDSsKTgv_beOpto71EYw=s900-c-k-c0x00ffffff-no-rj
+          - media_player: '[[media_player]]'
+      - type: custom:decluttering-card
+        template: quick_play
+        variables:
+          - title: AC DC
+          - image_url: >-
+              https://m.media-amazon.com/images/I/71ov-DhyciL._UF1000,1000_QL80_.jpg
+          - media_player: '[[media_player]]'
+          - type: Artist
+      - type: custom:decluttering-card
+        template: quick_play
+        variables:
+          - title: Portugal The Man
+          - type: Artist
+          - image_url: >-
+              https://m.media-amazon.com/images/I/911wSfEGS4L._UF1000,1000_QL80_.jpg
+          - media_player: '[[media_player]]'
+      - type: custom:decluttering-card
+        template: quick_play
+        variables:
+          - title: Kiss From A Rose
+          - image_url: https://i.scdn.co/image/ab67616d0000b27333d4866ed921300e8ef50808
+          - media_player: '[[media_player]]'
+          - type: track

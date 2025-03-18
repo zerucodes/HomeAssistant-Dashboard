@@ -1,0 +1,162 @@
+remote:
+  default:
+    - remote: remote.argus_tv_remote
+    - media_player: media_player.bedroom_tv
+    - button: input_button.ccu_input
+  card:
+    type: vertical-stack
+    cards:
+      - type: custom:mushroom-media-player-card
+        entity: '[[media_player]]'
+        show_volume_level: false
+        use_media_info: true
+        media_controls:
+          - previous
+          - play_pause_stop
+          - next
+        collapsible_controls: true
+        volume_controls:
+          - volume_set
+        fill_container: false
+        icon_type: entity-picture
+      - square: true
+        columns: 3
+        type: grid
+        cards:
+          - type: button
+            show_name: false
+            show_icon: true
+            hold_action:
+              action: none
+            entity: '[[remote]]'
+            icon: mdi:power
+            tap_action:
+              action: toggle
+          - show_name: false
+            show_icon: true
+            type: button
+            icon: mdi:arrow-up-bold
+            tap_action:
+              action: call-service
+              service: remote.send_command
+              data:
+                command: DPAD_UP
+              target:
+                entity_id: '[[remote]]'
+            hold_action:
+              action: none
+            show_state: false
+          - show_name: false
+            show_icon: true
+            type: button
+            double_tap_action:
+              action: call-service
+              service: automation.trigger
+              service_data:
+                entity_id: automation.cc_connect_audio_test_1
+            hold_action:
+              action: none
+            entity: '[[button]]'
+          - show_name: true
+            show_icon: true
+            type: button
+            icon: mdi:arrow-left-bold
+            tap_action:
+              action: call-service
+              service: remote.send_command
+              data:
+                command: DPAD_LEFT
+              target:
+                entity_id: '[[remote]]'
+            hold_action:
+              action: none
+            show_state: false
+          - type: button
+            icon: mdi:circle
+            tap_action:
+              action: call-service
+              service: remote.send_command
+              data:
+                command: DPAD_CENTER
+              target:
+                entity_id: '[[remote]]'
+            hold_action:
+              action: call-service
+              service: remote.send_command
+              data:
+                command: DPAD_CENTER
+                hold_secs: 0.5
+              target:
+                entity_id: '[[remote]]'
+          - type: button
+            icon: mdi:arrow-right-bold
+            tap_action:
+              action: call-service
+              service: remote.send_command
+              data:
+                command: DPAD_RIGHT
+              target:
+                entity_id: '[[remote]]'
+            hold_action:
+              action: none
+          - type: button
+            icon: mdi:undo-variant
+            tap_action:
+              action: call-service
+              service: remote.send_command
+              data:
+                command: BACK
+              target:
+                entity_id: '[[remote]]'
+            hold_action:
+              action: call-service
+              service: remote.send_command
+              data:
+                command: BACK
+                hold_secs: 0.5
+              target:
+                entity_id: '[[remote]]'
+          - type: button
+            icon: mdi:arrow-down-bold
+            tap_action:
+              action: call-service
+              service: remote.send_command
+              data:
+                command: DPAD_DOWN
+              target:
+                entity_id: '[[remote]]'
+            hold_action:
+              action: none
+          - type: button
+            icon: mdi:home-outline
+            tap_action:
+              action: call-service
+              service: remote.send_command
+              data:
+                command: HOME
+              target:
+                entity_id: '[[remote]]'
+            hold_action:
+              action: call-service
+              service: remote.send_command
+              data:
+                command: HOME
+                hold_secs: 0.5
+              target:
+                entity_id: '[[remote]]'
+      - type: custom:mini-media-player
+        entity: '[[media_player]]'
+        toggle_power: true
+        artwork: full-cover
+        hide:
+          name: true
+          icon: true
+          info: true
+          power: true
+          controls: true
+          jump: true
+          volume: true
+          volume_level: true
+          mute: true
+          progress: true
+          runtime: true

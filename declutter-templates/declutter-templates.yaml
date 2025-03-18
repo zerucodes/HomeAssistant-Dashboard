@@ -1,0 +1,1110 @@
+decluttering_templates:
+  mobile_device_android:
+    default:
+      - name: s21
+    card:
+      type: vertical-stack
+      cards:
+        - type: custom:button-card
+          show_icon: false
+          name: ' '
+          hold_action:
+            action: more-info
+          double_tap_action:
+            action: toggle
+          styles:
+            card:
+              - border-style: none
+            custom_fields:
+              picture_field:
+                - justify-self: center
+                - height: auto
+                - padding-top: 25px
+              status_field:
+                - position: absolute
+                - top: 15px
+                - right: 15px
+                - display: flex
+                - align-items: center
+                - gap: 10px
+            grid:
+              - grid-template-areas: >-
+                  "picture_field status_field" "n n" "state_field state_field"
+                  "button_field button_field" "bkg_graph bkg_graph"
+              - grid-template-columns: 1fr min-content
+              - grid-template-rows: 1fr min-content min-content min-content
+          custom_fields:
+            picture_field: |
+              [[[
+                  var imagePath = states['device_tracker.[[name]]'].attributes['entity_picture']
+                  return `<img
+                  src="${imagePath}"
+                  style="width: 150px;"> 
+                  </img> `;
+                        ]]]
+            status_field: |
+              [[[
+
+              function batteryToColor(battery, state) {
+                      if (state == 'charging'){
+                        return 'white';
+                      }else if (battery <= 20) {
+                        return 'red';
+                      } else if (battery > 20 && battery <= 30) {
+                        return 'orange';
+                      } else if (battery > 30 && battery <= 50) {
+                        return 'yellow';
+                      } else if (battery > 50 && battery < 98) {
+                        return 'lightgreen';
+                      } else if (battery >= 98) {
+                        return '#3AB0FF';
+                      }
+                    }
+
+                const createIcon = (icon, color) => icon ? 
+                  `<ha-icon icon="${icon}" style="width: 25px; height: 25px; color: ${color};"></ha-icon>` : '';
+
+                
+                const tracker = 'device_tracker.[[name]]';
+                const battery =  'sensor.[[name]]_battery_level';
+                const battery_state = 'sensor.[[name]]_battery_state';
+                const ringer = 'sensor.[[name]]_ringer_mode';
+                const network = 'sensor.[[name]]_network_type';
+                const bt = 'sensor.[[name]]_bluetooth_connection';
+                
+
+                let loc_color = 'red';
+                let loc_icon = 'mdi:map-marker-question';
+                let battery_icon = states[battery].attributes.icon;
+                let battery_color = batteryToColor(states[battery].state,  states[battery_state].state);
+                
+                let ringer_icon = states[ringer].attributes.icon
+                let ringer_color = '';
+                
+                let net_icon = states[network].attributes.icon;
+                let net_color = "purple";
+
+
+                let pairedDevices = states[bt].attributes.connected_paired_devices;
+                
+                try{
+                  const loc_name = states['device_tracker.[[name]]'].state;
+                  const loc = loc_name.replace(" ","_").toLowerCase();
+                  loc_color = loc === "home" ? 'lightgreen' : 'red';
+                  loc_icon = states['zone.' + loc].attributes.icon;
+                }catch (error)
+                {
+                  
+                }
+                
+                const deviceIconDictionary = {
+                    "XM4": "mdi:headphones",
+                    "Watch": "mdi:watch",
+                    "MX Master 3": "mdi:mouse",
+                    "Buds2 Pro": "phu:apple-airpods-pro",
+                    "TOYOTA Corolla": "mdi:car",
+                    "SONOS": "mdi:speaker",
+                    "ZERU-PC": "mdi:desktop-tower",
+                    "Galaxy Ring": "mdi:circle-outline",
+                    "OBD": "mdi:car-battery"
+                };
+
+                let unmatchedCount = 0;
+                let deviceIcons = ``;
+                pairedDevices.forEach(device => {
+                    let matched = false;
+                    for (const [name, icon] of Object.entries(deviceIconDictionary)) {
+                        if (device.toLowerCase().includes(name.toLowerCase())) {
+                              deviceIcons += `${createIcon(icon, 'cyan')}`;
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (!matched) unmatchedCount++;
+                });
+
+                let miscIcon = 'numeric-7-circle-outline';
+                if (unmatchedCount > 0){
+                  deviceIcons += `${createIcon('mdi:numeric-' + unmatchedCount + '-circle-outline','cyan')}`;
+                }
+                const status = `
+                
+                ${createIcon(loc_icon, loc_color)}
+                
+                ${createIcon(net_icon, net_color)}
+                ${createIcon(battery_icon, battery_color)}
+                ${deviceIcons}
+                        `;
+                return status;
+              ]]]
+        - type: horizontal-stack
+          cards:
+            - show_name: false
+              show_icon: true
+              type: button
+              entity: input_button.ping_[[name]]
+              tap_action:
+                action: toggle
+            - show_name: false
+              show_icon: true
+              type: button
+              entity: sensor.[[name]]_ringer_mode
+              tap_action:
+                action: call-service
+                service: automation.trigger
+                service_data:
+                  entity_id: automation.[[name]]_toggle_ringer
+            - show_name: false
+              show_icon: true
+              type: button
+              entity: input_text.copy_text
+              icon: mdi:clipboard-text-outline
+              tap_action:
+                action: call-service
+                service: notify.mobile_app_[[name]]
+                data:
+                  message: clipboard.get
+              double_tap_action:
+                action: call-service
+                service: notify.mobile_app_[[name]]
+                data:
+                  title: clipboard.data
+                  message: '{{ states.input_text.copy_text.state }}'
+        - type: map
+          entities:
+            - entity: device_tracker.[[name]]
+          theme_mode: auto
+          hours_to_show: 48
+          aspect_ratio: '2:1'
+        - type: custom:mini-graph-card
+          name: 1 Week Battery
+          entities:
+            - entity: sensor.[[name]]_battery_level
+          hours_to_show: 240
+          points_per_hour: 1
+          color_thresholds:
+            - color: red
+              value: 15
+            - color: orange
+            - color: yellow
+            - color: green
+              value: 85
+        - type: statistics-graph
+          chart_type: bar
+          entities:
+            - entity: sensor.[[name]]_battery_used
+          period: day
+          days_to_show: 5
+          stat_types:
+            - change
+        - type: custom:bar-card
+          entities:
+            - entity: sensor.[[name]]_volume_level_call
+              max: 5
+            - entity: sensor.[[name]]_volume_level_alarm
+            - entity: sensor.[[name]]_volume_level_music
+            - entity: sensor.[[name]]_volume_level_ringer
+            - entity: sensor.[[name]]_volume_level_system
+          max: 15
+          positions:
+            name: 'off'
+          height: 100px
+          width: 50%
+          direction: up
+          stack: horizontal
+        - type: entities
+          entities:
+            - entity: sensor.[[name]]_wifi_ip_address
+            - entity: sensor.[[name]]_public_ip_address
+          state_color: false
+          show_header_toggle: true
+        - type: custom:decluttering-card
+          template: device_details
+          variables:
+            - device: '[[name]]'
+  area_details:
+    default:
+      - area: bathroom
+    card:
+      type: vertical-stack
+      cards:
+        - type: custom:bubble-card
+          card_type: separator
+          name: Lights
+          sub_button:
+            - entity: input_boolean.dashboard_show_lights
+              show_name: false
+              tap_action:
+                action: toggle
+        - type: conditional
+          conditions:
+            - condition: state
+              entity: input_boolean.dashboard_show_lights
+              state: 'on'
+          card:
+            type: custom:auto-entities
+            filter:
+              include:
+                - domain: light
+                  area: '[[area]]'
+                  options:
+                    type: custom:bubble-card
+                    card_type: button
+                    button_type: slider
+                    attribute: brightness
+                    card_layout: normal
+                    tap_action:
+                      action: toggle
+                    hold_action:
+                      action: more-info
+                    styles: |-
+                      .bubble-button-card-container {
+                          height: 40px !important;
+                        }
+              exclude:
+                - state: unavailable
+            card:
+              type: entities
+            sort:
+              method: friendly_name
+              reverse: false
+        - type: custom:bubble-card
+          card_type: separator
+          name: Sensors
+          sub_button:
+            - entity: input_boolean.dashboard_show_details
+              show_name: false
+              tap_action:
+                action: toggle
+        - type: conditional
+          conditions:
+            - condition: state
+              entity: input_boolean.dashboard_show_details
+              state: 'on'
+          card:
+            type: custom:auto-entities
+            card:
+              type: entities
+              state_color: true
+            filter:
+              include:
+                - domain: '*sensor'
+                  area: '[[area]]'
+              exclude:
+                - name: '*connection'
+                - name: '*consumption*'
+                - name: '*option*'
+        - type: custom:bubble-card
+          card_type: separator
+          name: Automations
+          sub_button:
+            - entity: input_boolean.dashboard_show_automations
+              show_name: false
+              tap_action:
+                action: toggle
+        - type: conditional
+          conditions:
+            - condition: state
+              entity: input_boolean.dashboard_show_automations
+              state: 'on'
+          card:
+            type: custom:auto-entities
+            card:
+              type: entities
+              state_color: true
+            filter:
+              include:
+                - domain: automation
+                  area: '[[area]]'
+        - type: custom:bubble-card
+          card_type: separator
+          name: Media Players
+          sub_button: []
+        - type: custom:auto-entities
+          filter:
+            include:
+              - domain: media_player
+                area: '[[area]]'
+                entity_id: '*_2'
+                options:
+                  type: custom:mushroom-media-player-card
+                  show_volume_level: false
+                  use_media_info: true
+                  media_controls:
+                    - previous
+                    - next
+                    - on_off
+                    - play_pause_stop
+                  collapsible_controls: false
+                  volume_controls:
+                    - volume_set
+                  fill_container: false
+                  layout: horizontal
+                  icon_type: entity-picture
+                  double_tap_action:
+                    action: perform-action
+                    perform_action: music_assistant.transfer_queue
+                    target:
+                      entity_id: this.entity_id
+                    data: {}
+            exclude:
+              - state: unavailable
+          card:
+            type: entities
+            show_header_toggle: false
+          sort:
+            method: friendly_name
+            reverse: false
+          show_empty: false
+  area:
+    default:
+      - entity: light.bedroom_lamps
+      - name: Area Name
+      - media_player: media_player.apollo_2
+      - temperature: sensor.esp_bedroom_temperature
+      - humidity: sensor.esp_bedroom_humidity
+      - sensor: binary_sensor.door_contact
+      - path: bedroom
+    card:
+      type: custom:bubble-card
+      card_type: button
+      button_type: state
+      entity: '[[entity]]'
+      name: '[[name]]'
+      scrolling_effect: false
+      show_state: false
+      show_attribute: true
+      button_action:
+        tap_action:
+          action: navigate
+          navigation_path: '#[[path]]'
+      double_tap_action:
+        action: toggle
+      sub_button:
+        - entity: '[[sensor]]'
+          show_background: false
+          tap_action:
+            action: more-info
+          hold_action:
+            action: more-info
+          visibility:
+            - condition: state
+              entity: '[[sensor]]'
+              state_not: 'off'
+        - entity: '[[media_player]]'
+          show_state: false
+          icon: mdi:play-pause
+          double_tap_action:
+            action: call-service
+            target:
+              entity_id: entity
+            data:
+              radio_mode: false
+              enqueue: replace
+              media_id: Modern Hip hop
+            service: music_assistant.play_media
+          tap_action:
+            action: call-service
+            target:
+              entity_id: entity
+            data: {}
+            service: media_player.media_play_pause
+          hold_action:
+            action: more-info
+      styles: |-
+        .bubble-sub-button-0 > ha-icon {
+          color: ${hass.states['[[sensor]]'].state == 'off' ? 'lightgreen' : 'red'} !important;
+        }
+        ${subButtonIcon[1].setAttribute("icon",
+        hass.states['[[media_player]]'].state === 'playing' ? 'mdi:pause' :
+        'mdi:play')}
+        /* Below code is for badges */
+        /* From patreon.com/Clooos */
+
+        .bubble-icon-container::after {
+          border-radius: 100%;
+        }
+
+        .bubble-icon-container {
+          overflow: visible !important;
+        }
+
+        .bubble-entity-picture {
+          border-radius: var(--bubble-icon-border-radius, var(--bubble-border-radius, 50%));
+        }
+
+        .badge {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: absolute;
+          z-index: 1;
+          background: var(--accent-color);
+          color: var(--primary-text-color);
+          font-size: 10px;
+          height: 15px;
+          width: 20px;
+          border-radius: 50%;
+          --mdc-icon-size: 12px;
+          box-sizing: border-box;
+        }
+
+        .badge.text {
+          border-radius: 10px;
+          padding: 0 4px;
+          width: auto;
+          min-width: 20px;
+        }
+
+        .badge.position-1 {
+          top: -4px;
+          right: -4px;
+        }
+
+        .badge.position-2 {
+          bottom: -4px;
+          right: -4px;
+        }
+
+        .badge.position-3 {
+          bottom: -4px;
+          left: -4px;
+        }
+
+        .badge.position-4 {
+          top: -4px;
+          left: -4px;
+        }
+
+        ${(() => {
+          // Up to 4 badges at the same time in each configs
+          
+          const containersConfig = [
+          
+            {
+              // Example for the main icon
+              containerSelector: '.bubble-icon-container',
+              badgesConfig: [
+              
+                // Show home icon when Quentin is home
+                {
+                  entity: '[[temperature]]',
+                  text: (state) => `${state}°F`,
+                  condition: (state) => state < 100,
+                },
+                
+                // Show battery percentage when below 10%
+                {
+                  entity: '[[humidity]]',
+                  text: (state) => `${state}%`,
+                  condition: (state) => state < 100,
+                },
+
+                // Add more badges if needed...
+              ],
+            },
+            
+            {
+              // Example for sub-button(s) (can be empty or removed if not used)
+              containerSelector: '.bubble-sub-button-1',
+              badgesConfig: [
+                // Add badges for this container if necessary
+              ],
+            },
+
+            // Add more configs if needed...
+          ];
+
+          card.badges ||= {};
+          containersConfig.forEach(({ containerSelector, badgesConfig }) => {
+            const container = card.querySelector(containerSelector);
+            if (!container) return;
+            card.badges[containerSelector] ||= [];
+            badgesConfig.forEach((badgeConfig) => {
+              const state = hass.states[badgeConfig.entity]?.state;
+              const existingBadge = card.badges[containerSelector].find(b => 
+                b.entity === badgeConfig.entity && b.condition.toString() === badgeConfig.condition.toString()
+              );
+              if (badgeConfig.condition(state)) {
+                if (existingBadge) {
+                  if (badgeConfig.text) {
+                    existingBadge.element.textContent = typeof badgeConfig.text === 'function' ? badgeConfig.text(state) : badgeConfig.text;
+                  }
+                } else {
+                  const el = document.createElement("div");
+                  el.className = `badge position-${card.badges[containerSelector].length + 1} ${badgeConfig.text ? 'text' : ''}`;
+                  if (badgeConfig.color) el.style.backgroundColor = badgeConfig.color;
+                  if (badgeConfig.text) {
+                    el.textContent = typeof badgeConfig.text === 'function' ? badgeConfig.text(state) : badgeConfig.text;
+                  } else if (badgeConfig.icon) {
+                    const icon = document.createElement("ha-icon");
+                    icon.icon = badgeConfig.icon;
+                    el.appendChild(icon);
+                  }
+                  container.appendChild(el);
+                  card.badges[containerSelector].push({ 
+                    entity: badgeConfig.entity, 
+                    condition: badgeConfig.condition, 
+                    element: el 
+                  });
+                }
+              } else if (existingBadge) {
+                container.removeChild(existingBadge.element);
+                card.badges[containerSelector] = card.badges[containerSelector].filter(b => b !== existingBadge);
+              }
+            });
+          });
+        })()}
+  device_details:
+    default:
+      - device: A7
+    card:
+      type: vertical-stack
+      cards:
+        - type: custom:bubble-card
+          card_type: separator
+          name: Details
+          sub_button:
+            - entity: input_boolean.dashboard_show_details
+              show_name: false
+              tap_action:
+                action: toggle
+        - type: conditional
+          conditions:
+            - condition: state
+              entity: input_boolean.dashboard_show_details
+              state: 'on'
+          card:
+            type: custom:auto-entities
+            card:
+              type: entities
+              state_color: true
+            filter:
+              include:
+                - device: '[[device]]'
+            sort:
+              method: entity_id
+  device:
+    default:
+      - device: XM4
+      - tracker: device_tracker.default_location
+      - battery: sensor.wh_1000xm4_battery
+      - usage: sensor.wh_1000xm4_battery_used
+      - hours: 240
+    card:
+      type: vertical-stack
+      cards:
+        - type: map
+          entities:
+            - entity: '[[tracker]]'
+          theme_mode: auto
+          hours_to_show: 48
+          aspect_ratio: '2:1'
+        - type: custom:mini-graph-card
+          name: '[[device]] Battery Stats'
+          entities:
+            - entity: '[[battery]]'
+          hours_to_show: 240
+          points_per_hour: 1
+          color_thresholds:
+            - color: red
+              value: 15
+            - color: orange
+            - color: yellow
+            - color: green
+              value: 85
+        - type: statistics-graph
+          chart_type: bar
+          entities:
+            - entity: '[[usage]]'
+          period: day
+          days_to_show: 5
+          stat_types:
+            - change
+  mobile_device:
+    default:
+      - name: s21
+      - device: S21
+      - tracker: device_tracker.s21
+      - battery: sensor.s21_battery_level
+      - usage: sensor.s21_battery_used
+      - battery_state: sensor.s21_battery_state
+      - ringer: sensor.s21_ringer_mode
+      - network: sensor.s21_network_type
+      - bt: sensor.s21_bluetooth_connection
+    card:
+      type: vertical-stack
+      cards:
+        - type: custom:button-card
+          show_icon: false
+          name: ' '
+          hold_action:
+            action: more-info
+          double_tap_action:
+            action: toggle
+          styles:
+            card:
+              - border-style: none
+            custom_fields:
+              picture_field:
+                - justify-self: center
+                - height: auto
+                - padding-top: 25px
+              status_field:
+                - position: absolute
+                - top: 15px
+                - right: 15px
+                - display: flex
+                - align-items: center
+                - gap: 10px
+            grid:
+              - grid-template-areas: >-
+                  "picture_field status_field" "n n" "state_field state_field"
+                  "button_field button_field" "bkg_graph bkg_graph"
+              - grid-template-columns: 1fr min-content
+              - grid-template-rows: 1fr min-content min-content min-content
+          custom_fields:
+            picture_field: |
+              [[[
+                  var imagePath = states['[[tracker]]'].attributes['entity_picture']
+                  return `<img
+                  src="${imagePath}"
+                  style="width: 150px;"> 
+                  </img> `;
+                        ]]]
+            status_field: |
+              [[[
+
+              function batteryToColor(battery, state) {
+                      if (state == 'charging'){
+                        return 'white';
+                      }else if (battery <= 20) {
+                        return 'red';
+                      } else if (battery > 20 && battery <= 30) {
+                        return 'orange';
+                      } else if (battery > 30 && battery <= 50) {
+                        return 'yellow';
+                      } else if (battery > 50 && battery < 98) {
+                        return 'lightgreen';
+                      } else if (battery >= 98) {
+                        return '#3AB0FF';
+                      }
+                    }
+
+                const createIcon = (icon, color) => icon ? 
+                  `<ha-icon icon="${icon}" style="width: 25px; height: 25px; color: ${color};"></ha-icon>` : '';
+
+                
+                const tracker = '[[tracker]]';
+                const battery =  '[[battery]]';
+                const battery_state = '[[battery_state]]';
+                const ringer = '[[ringer]]';
+                const network = '[[network]]';
+                const bt = '[[bt]]';
+                
+
+                let loc_color = 'red';
+                let loc_icon = 'mdi:map-marker-question';
+                let battery_icon = states[battery].attributes.icon;
+                let battery_color = batteryToColor(states[battery].state,  states[battery_state].state);
+                
+                let ringer_icon = states[ringer].attributes.icon
+                let ringer_color = '';
+                
+                let net_icon = states[network].attributes.icon;
+                let net_color = "purple";
+
+
+                let pairedDevices = states[bt].attributes.connected_paired_devices;
+                
+                try{
+                  const loc_name = states[tracker].state;
+                  const loc = loc_name.replace(" ","_").toLowerCase();
+                  loc_color = loc === "home" ? 'lightgreen' : 'red';
+                  loc_icon = states['zone.' + loc].attributes.icon;
+                }catch (error)
+                {
+                  
+                }
+                
+                const deviceIconDictionary = {
+                    "XM4": "mdi:headphones",
+                    "Watch": "mdi:watch",
+                    "MX Master 3": "mdi:mouse",
+                    "Buds2 Pro": "phu:apple-airpods-pro",
+                    "TOYOTA Corolla": "mdi:car",
+                    "SONOS": "mdi:speaker",
+                    "ZERU-PC": "mdi:desktop-tower",
+                    "Galaxy Ring": "mdi:circle-outline",
+                    "OBD": "mdi:car-battery"
+                };
+
+                let unmatchedCount = 0;
+                let deviceIcons = ``;
+                pairedDevices.forEach(device => {
+                    let matched = false;
+                    for (const [name, icon] of Object.entries(deviceIconDictionary)) {
+                        if (device.toLowerCase().includes(name.toLowerCase())) {
+                              deviceIcons += `${createIcon(icon, 'cyan')}`;
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (!matched) unmatchedCount++;
+                });
+
+                let miscIcon = 'numeric-7-circle-outline';
+                if (unmatchedCount > 0){
+                  deviceIcons += `${createIcon('mdi:numeric-' + unmatchedCount + '-circle-outline','cyan')}`;
+                }
+                const status = `
+                
+                ${createIcon(loc_icon, loc_color)}
+                
+                ${createIcon(net_icon, net_color)}
+                ${createIcon(battery_icon, battery_color)}
+                ${deviceIcons}
+                        `;
+                return status;
+              ]]]
+        - type: horizontal-stack
+          cards:
+            - show_name: false
+              show_icon: true
+              type: button
+              entity: input_button.ping_[[name]]
+              tap_action:
+                action: toggle
+            - show_name: false
+              show_icon: true
+              type: button
+              entity: sensor.[[name]]_ringer_mode
+              tap_action:
+                action: call-service
+                service: automation.trigger
+                service_data:
+                  entity_id: automation.[[name]]_toggle_ringer
+            - show_name: false
+              show_icon: true
+              type: button
+              entity: input_text.copy_text
+              icon: mdi:clipboard-text-outline
+              tap_action:
+                action: call-service
+                service: notify.mobile_app_[[name]]
+                data:
+                  message: clipboard.get
+              double_tap_action:
+                action: call-service
+                service: notify.mobile_app_[[name]]
+                data:
+                  title: clipboard.data
+                  message: '{{ states.input_text.copy_text.state }}'
+        - type: map
+          entities:
+            - entity: '[[tracker]]'
+          theme_mode: auto
+          hours_to_show: 48
+          aspect_ratio: '2:1'
+        - type: custom:mini-graph-card
+          name: 1 Week Battery
+          entities:
+            - entity: '[[battery]]'
+          hours_to_show: 240
+          points_per_hour: 1
+          color_thresholds:
+            - color: red
+              value: 15
+            - color: orange
+            - color: yellow
+            - color: green
+              value: 85
+        - type: statistics-graph
+          chart_type: bar
+          entities:
+            - entity: '[[usage]]'
+          period: day
+          days_to_show: 5
+          stat_types:
+            - change
+        - type: custom:bar-card
+          entities:
+            - entity: sensor.[[name]]_volume_level_call
+              max: 5
+            - entity: sensor.[[name]]_volume_level_alarm
+            - entity: sensor.[[name]]_volume_level_music
+            - entity: sensor.[[name]]_volume_level_ringer
+            - entity: sensor.[[name]]_volume_level_system
+          max: 15
+          positions:
+            name: 'off'
+          height: 100px
+          width: 50%
+          direction: up
+          stack: horizontal
+        - type: custom:decluttering-card
+          template: device_details
+          variables:
+            - device: '[[device]]'
+  quick_play_grid:
+    default:
+      - media_player: media_player.apollo_2
+    card:
+      square: true
+      type: grid
+      columns: 3
+      cards:
+        - type: custom:decluttering-card
+          template: quick_play
+          variables:
+            - title: Baby Keem
+            - type: Artist
+            - image_url: >-
+                https://upload.wikimedia.org/wikipedia/en/9/90/TheMelodicBlueCover.jpeg
+            - media_player: '[[media_player]]'
+        - type: custom:decluttering-card
+          template: quick_play
+          variables:
+            - title: JID
+            - type: Artist
+            - image_url: https://i.scdn.co/image/ab6761610000e5eb10781f7b76a5eb0d397e02c9
+            - media_player: '[[media_player]]'
+        - type: custom:decluttering-card
+          template: quick_play
+          variables:
+            - title: Kendrick Lamar
+            - type: Artist
+            - image_url: >-
+                https://e.snmc.io/i/600/s/e1dbcf54455ba5558ae77c8be1dfc7b6/12744501/kendrick-lamar-gnx-cover-art.jpg
+            - media_player: '[[media_player]]'
+        - type: custom:decluttering-card
+          template: quick_play
+          variables:
+            - title: Glass Animals
+            - type: Artist
+            - image_url: >-
+                https://ctmentertainment.be/wp-content/uploads/2023/11/Glass-Animals.jpeg
+            - media_player: '[[media_player]]'
+        - type: custom:decluttering-card
+          template: quick_play
+          variables:
+            - title: Alt J
+            - type: Artist
+            - image_url: >-
+                https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRfhsO4WyJQuN2stiHLrUZq634tHgegKqwpdA&s
+            - media_player: '[[media_player]]'
+        - type: custom:decluttering-card
+          template: quick_play
+          variables:
+            - title: Pop Smoke
+            - type: Artist
+            - image_url: >-
+                https://yt3.googleusercontent.com/ytc/AIdro_lKJKVlE-XcAgWMWbOmYWbbUIcNDSsKTgv_beOpto71EYw=s900-c-k-c0x00ffffff-no-rj
+            - media_player: '[[media_player]]'
+        - type: custom:decluttering-card
+          template: quick_play
+          variables:
+            - title: AC DC
+            - image_url: >-
+                https://m.media-amazon.com/images/I/71ov-DhyciL._UF1000,1000_QL80_.jpg
+            - media_player: '[[media_player]]'
+            - type: Artist
+        - type: custom:decluttering-card
+          template: quick_play
+          variables:
+            - title: Portugal The Man
+            - type: Artist
+            - image_url: >-
+                https://m.media-amazon.com/images/I/911wSfEGS4L._UF1000,1000_QL80_.jpg
+            - media_player: '[[media_player]]'
+        - type: custom:decluttering-card
+          template: quick_play
+          variables:
+            - title: Kiss From A Rose
+            - image_url: https://i.scdn.co/image/ab67616d0000b27333d4866ed921300e8ef50808
+            - media_player: '[[media_player]]'
+            - type: track
+  quick_play:
+    default:
+      - image_url: https://i.scdn.co/image/ab6761610000e5eb10781f7b76a5eb0d397e02c9
+      - title: JID
+      - type: Artist
+      - media_player: media_player.apollo_2
+    card:
+      type: picture-entity
+      show_state: false
+      show_name: false
+      camera_view: auto
+      image: '[[image_url]]'
+      entity: '[[media_player]]'
+      double_tap_action:
+        action: call-service
+        target:
+          entity_id: '[[media_player]]'
+        data:
+          media_id: '[[title]]'
+          media_type: '[[type]]'
+          radio_mode: true
+        service: music_assistant.play_media
+  remote:
+    default:
+      - remote: remote.argus_tv_remote
+      - media_player: media_player.bedroom_tv
+      - button: input_button.ccu_input
+    card:
+      type: vertical-stack
+      cards:
+        - type: custom:mushroom-media-player-card
+          entity: '[[media_player]]'
+          show_volume_level: false
+          use_media_info: true
+          media_controls:
+            - previous
+            - play_pause_stop
+            - next
+          collapsible_controls: true
+          volume_controls:
+            - volume_set
+          fill_container: false
+          icon_type: entity-picture
+        - square: true
+          columns: 3
+          type: grid
+          cards:
+            - type: button
+              show_name: false
+              show_icon: true
+              hold_action:
+                action: none
+              entity: '[[remote]]'
+              icon: mdi:power
+              tap_action:
+                action: toggle
+            - show_name: false
+              show_icon: true
+              type: button
+              icon: mdi:arrow-up-bold
+              tap_action:
+                action: call-service
+                service: remote.send_command
+                data:
+                  command: DPAD_UP
+                target:
+                  entity_id: '[[remote]]'
+              hold_action:
+                action: none
+              show_state: false
+            - show_name: false
+              show_icon: true
+              type: button
+              double_tap_action:
+                action: call-service
+                service: automation.trigger
+                service_data:
+                  entity_id: automation.cc_connect_audio_test_1
+              hold_action:
+                action: none
+              entity: '[[button]]'
+            - show_name: true
+              show_icon: true
+              type: button
+              icon: mdi:arrow-left-bold
+              tap_action:
+                action: call-service
+                service: remote.send_command
+                data:
+                  command: DPAD_LEFT
+                target:
+                  entity_id: '[[remote]]'
+              hold_action:
+                action: none
+              show_state: false
+            - type: button
+              icon: mdi:circle
+              tap_action:
+                action: call-service
+                service: remote.send_command
+                data:
+                  command: DPAD_CENTER
+                target:
+                  entity_id: '[[remote]]'
+              hold_action:
+                action: call-service
+                service: remote.send_command
+                data:
+                  command: DPAD_CENTER
+                  hold_secs: 0.5
+                target:
+                  entity_id: '[[remote]]'
+            - type: button
+              icon: mdi:arrow-right-bold
+              tap_action:
+                action: call-service
+                service: remote.send_command
+                data:
+                  command: DPAD_RIGHT
+                target:
+                  entity_id: '[[remote]]'
+              hold_action:
+                action: none
+            - type: button
+              icon: mdi:undo-variant
+              tap_action:
+                action: call-service
+                service: remote.send_command
+                data:
+                  command: BACK
+                target:
+                  entity_id: '[[remote]]'
+              hold_action:
+                action: call-service
+                service: remote.send_command
+                data:
+                  command: BACK
+                  hold_secs: 0.5
+                target:
+                  entity_id: '[[remote]]'
+            - type: button
+              icon: mdi:arrow-down-bold
+              tap_action:
+                action: call-service
+                service: remote.send_command
+                data:
+                  command: DPAD_DOWN
+                target:
+                  entity_id: '[[remote]]'
+              hold_action:
+                action: none
+            - type: button
+              icon: mdi:home-outline
+              tap_action:
+                action: call-service
+                service: remote.send_command
+                data:
+                  command: HOME
+                target:
+                  entity_id: '[[remote]]'
+              hold_action:
+                action: call-service
+                service: remote.send_command
+                data:
+                  command: HOME
+                  hold_secs: 0.5
+                target:
+                  entity_id: '[[remote]]'
+        - type: custom:mini-media-player
+          entity: '[[media_player]]'
+          toggle_power: true
+          artwork: full-cover
+          hide:
+            name: true
+            icon: true
+            info: true
+            power: true
+            controls: true
+            jump: true
+            volume: true
+            volume_level: true
+            mute: true
+            progress: true
+            runtime: true
